@@ -71,6 +71,6 @@ class AddRecipe : AppCompatActivity(), AdapterView.OnItemSelectedListener {
             Log.d("ing", ingr.amount.toString())
             Log.d("ing", ingr.type)
         }
-        Log.d("Recipe", recipe.text.toString())
+        Log.d("RecipeEntry", recipe.text.toString())
     }
 }
