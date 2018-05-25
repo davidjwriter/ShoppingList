@@ -10,7 +10,7 @@ import android.database.sqlite.SQLiteOpenHelper
 
 import java.util.ArrayList
 
-class UsersDBHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME, null, DATABASE_VERSION) {
+class IngredientDBHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME, null, DATABASE_VERSION) {
     override fun onCreate(db: SQLiteDatabase) {
         db.execSQL(SQL_CREATE_ENTRIES)
     }
@@ -27,18 +27,19 @@ class UsersDBHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME,
     }
 
     @Throws(SQLiteConstraintException::class)
-    fun insertRecipe(recipe: RecipeEntry): Boolean {
+    fun insertINGREDIENT(INGREDIENT: IngredientModel): Boolean {
         // Gets the data repository in write mode
         val db = writableDatabase
 
         // Create a new map of values, where column names are the keys
         val values = ContentValues()
-        values.put(DBContract.RecipeEntry.COLUMN_RECIPE_ID, recipe.recipeid)
-        values.put(DBContract.RecipeEntry.COLUMN_NAME, recipe.name)
-        values.put(DBContract.RecipeEntry.COLUMN_AGE, recipe.age)
+        values.put(DBContract.IngredientEntry.COLUMN_INGREDIENT_ID, INGREDIENT.ingredientid)
+        values.put(DBContract.IngredientEntry.COLUMN_NAME, INGREDIENT.name)
+        values.put(DBContract.IngredientEntry.COLUMN_AMOUNT, INGREDIENT.amount)
+        values.put(DBContract.IngredientEntry.COLUMN_TYPE, INGREDIENT.type)
 
         // Insert the new row, returning the primary key value of the new row
-        val newRowId = db.insert(DBContract.UserEntry.TABLE_NAME, null, values)
+        val newRowId = db.insert(DBContract.IngredientEntry.TABLE_NAME, null, values)
 
         return true
     }
@@ -48,21 +49,21 @@ class UsersDBHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME,
         // Gets the data repository in write mode
         val db = writableDatabase
         // Define 'where' part of query.
-        val selection = DBContract.UserEntry.COLUMN_USER_ID + " LIKE ?"
+        val selection = DBContract.IngredientEntry.COLUMN_INGREDIENT_ID + " LIKE ?"
         // Specify arguments in placeholder order.
         val selectionArgs = arrayOf(userid)
         // Issue SQL statement.
-        db.delete(DBContract.UserEntry.TABLE_NAME, selection, selectionArgs)
+        db.delete(DBContract.IngredientEntry.TABLE_NAME, selection, selectionArgs)
 
         return true
     }
 
-    fun readUser(userid: String): ArrayList<UserModel> {
-        val users = ArrayList<UserModel>()
+    fun readUser(userid: String): ArrayList<IngredientModel> {
+        val users = ArrayList<IngredientModel>()
         val db = writableDatabase
         var cursor: Cursor? = null
         try {
-            cursor = db.rawQuery("select * from " + DBContract.UserEntry.TABLE_NAME + " WHERE " + DBContract.UserEntry.COLUMN_USER_ID + "='" + userid + "'", null)
+            cursor = db.rawQuery("select * from " + DBContract.IngredientEntry.TABLE_NAME + " WHERE " + DBContract.IngredientEntry.COLUMN_INGREDIENT_ID + "='" + userid + "'", null)
         } catch (e: SQLiteException) {
             // if table not yet present, create it
             db.execSQL(SQL_CREATE_ENTRIES)
@@ -73,22 +74,22 @@ class UsersDBHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME,
         var age: String
         if (cursor!!.moveToFirst()) {
             while (cursor.isAfterLast == false) {
-                name = cursor.getString(cursor.getColumnIndex(DBContract.UserEntry.COLUMN_NAME))
-                age = cursor.getString(cursor.getColumnIndex(DBContract.UserEntry.COLUMN_AGE))
+                name = cursor.getString(cursor.getColumnIndex(DBContract.IngredientEntry.COLUMN_NAME))
+                //age = cursor.getString(cursor.getColumnIndex(DBContract.IngredientModel.COLUMN_AGE))
 
-                users.add(UserModel(userid, name, age))
+                //users.add(IngredientModel(userid, name, age))
                 cursor.moveToNext()
             }
         }
         return users
     }
 
-    fun readAllUsers(): ArrayList<UserModel> {
-        val users = ArrayList<UserModel>()
+    fun readAllUsers(): ArrayList<IngredientModel> {
+        val users = ArrayList<IngredientModel>()
         val db = writableDatabase
         var cursor: Cursor? = null
         try {
-            cursor = db.rawQuery("select * from " + DBContract.UserEntry.TABLE_NAME, null)
+            cursor = db.rawQuery("select * from " + DBContract.IngredientEntry.TABLE_NAME, null)
         } catch (e: SQLiteException) {
             db.execSQL(SQL_CREATE_ENTRIES)
             return ArrayList()
@@ -99,11 +100,11 @@ class UsersDBHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME,
         var age: String
         if (cursor!!.moveToFirst()) {
             while (cursor.isAfterLast == false) {
-                userid = cursor.getString(cursor.getColumnIndex(DBContract.UserEntry.COLUMN_USER_ID))
-                name = cursor.getString(cursor.getColumnIndex(DBContract.UserEntry.COLUMN_NAME))
-                age = cursor.getString(cursor.getColumnIndex(DBContract.UserEntry.COLUMN_AGE))
+                //userid = cursor.getString(cursor.getColumnIndex(DBContract.UserEntry.COLUMN_USER_ID))
+                //name = cursor.getString(cursor.getColumnIndex(DBContract.UserEntry.COLUMN_NAME))
+                //age = cursor.getString(cursor.getColumnIndex(DBContract.UserEntry.COLUMN_AGE))
 
-                users.add(UserModel(userid, name, age))
+                //users.add(IngredientModel(userid, name, age))
                 cursor.moveToNext()
             }
         }
@@ -113,15 +114,16 @@ class UsersDBHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME,
     companion object {
         // If you change the database schema, you must increment the database version.
         val DATABASE_VERSION = 1
-        val DATABASE_NAME = "FeedReader.db"
+        val DATABASE_NAME = "INGREDIENTApp.db"
 
         private val SQL_CREATE_ENTRIES =
-                "CREATE TABLE " + DBContract.UserEntry.TABLE_NAME + " (" +
-                        DBContract.UserEntry.COLUMN_USER_ID + " TEXT PRIMARY KEY," +
-                        DBContract.UserEntry.COLUMN_NAME + " TEXT," +
-                        DBContract.UserEntry.COLUMN_AGE + " TEXT)"
+                "CREATE TABLE " + DBContract.IngredientEntry.TABLE_NAME + " (" +
+                        DBContract.IngredientEntry.COLUMN_INGREDIENT_ID + " TEXT PRIMARY KEY," +
+                        DBContract.IngredientEntry.COLUMN_NAME + " TEXT," +
+                        DBContract.IngredientEntry.COLUMN_AMOUNT + " REAL," +
+                        DBContract.IngredientEntry.COLUMN_TYPE + "TEXT)"
 
-        private val SQL_DELETE_ENTRIES = "DROP TABLE IF EXISTS " + DBContract.UserEntry.TABLE_NAME
+        private val SQL_DELETE_ENTRIES = "DROP TABLE IF EXISTS " + DBContract.IngredientEntry.TABLE_NAME
     }
 
 }
