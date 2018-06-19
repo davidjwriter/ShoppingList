@@ -72,5 +72,12 @@ class AddRecipe : AppCompatActivity(), AdapterView.OnItemSelectedListener {
             Log.d("ing", ingr.type)
         }
         Log.d("RecipeModel", recipe.text.toString())
+        var ingrs:ArrayList<IngredientModel> = ArrayList<IngredientModel>()
+        for (ingr in list_of_ingredients) {
+            ingrs.add(IngredientModel("1",ingr.ingredient, ingr.amount, ingr.type))
+        }
+        var newRecipe:RecipeModel = RecipeModel("1", name.text.toString(), ByteArray(1), ingrs.toString(), recipe.text.toString())
+        val dbHelper = RecipeDBHelper(this)
+        dbHelper.insertRecipe(newRecipe)
     }
 }
