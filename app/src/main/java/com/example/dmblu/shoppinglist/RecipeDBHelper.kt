@@ -7,6 +7,8 @@ import android.database.sqlite.SQLiteConstraintException
 import android.database.sqlite.SQLiteDatabase
 import android.database.sqlite.SQLiteException
 import android.database.sqlite.SQLiteOpenHelper
+import com.example.dmblu.shoppinglist.IngredientDBHelper.Companion.DATABASE_NAME
+import com.example.dmblu.shoppinglist.IngredientDBHelper.Companion.DATABASE_VERSION
 
 import java.util.ArrayList
 
@@ -32,15 +34,16 @@ class RecipeDBHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
         val db = writableDatabase
 
         // Create a new map of values, where column names are the keys
-        val values = ContentValues()
-        values.put(DBContract.RecipeEntry.COLUMN_RECIPE_ID, recipe.recipeid)
-        values.put(DBContract.RecipeEntry.COLUMN_NAME, recipe.name)
-        values.put(DBContract.RecipeEntry.COLUMN_IMAGE, recipe.image)
-        values.put(DBContract.RecipeEntry.COLUMN_INGREDIENTS, recipe.list_ingredients)
-        values.put(DBContract.RecipeEntry.COLUMN_RECIPE, recipe.recipe)
+        val values = ContentValues().apply {
+            put(DBContract.RecipeEntry.COLUMN_RECIPE_ID, recipe.recipeid)
+            put(DBContract.RecipeEntry.COLUMN_NAME, recipe.name)
+            put(DBContract.RecipeEntry.COLUMN_IMAGE, recipe.image)
+            put(DBContract.RecipeEntry.COLUMN_INGREDIENTS, recipe.list_ingredients)
+            put(DBContract.RecipeEntry.COLUMN_RECIPE, recipe.recipe)
+        }
 
         // Insert the new row, returning the primary key value of the new row
-        val newRowId = db.insert(DBContract.RecipeEntry.TABLE_NAME, null, values)
+        val newRowId = db?.insert(DBContract.RecipeEntry.TABLE_NAME, null, values)
 
         return true
     }
@@ -114,7 +117,7 @@ class RecipeDBHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
 
     companion object {
         // If you change the database schema, you must increment the database version.
-        val DATABASE_VERSION = 1
+        val DATABASE_VERSION = 5
         val DATABASE_NAME = "RecipeApp.db"
 
         private val SQL_CREATE_ENTRIES =
@@ -122,8 +125,8 @@ class RecipeDBHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
                         DBContract.RecipeEntry.COLUMN_RECIPE_ID + " TEXT PRIMARY KEY," +
                         DBContract.RecipeEntry.COLUMN_NAME + " TEXT," +
                         DBContract.RecipeEntry.COLUMN_IMAGE + " BLOB," +
-                        DBContract.RecipeEntry.COLUMN_INGREDIENTS + "TEXT," +
-                        DBContract.RecipeEntry.COLUMN_RECIPE + "TEXT)"
+                        DBContract.RecipeEntry.COLUMN_INGREDIENTS + " TEXT," +
+                        DBContract.RecipeEntry.COLUMN_RECIPE + " TEXT)"
 
         private val SQL_DELETE_ENTRIES = "DROP TABLE IF EXISTS " + DBContract.RecipeEntry.TABLE_NAME
     }

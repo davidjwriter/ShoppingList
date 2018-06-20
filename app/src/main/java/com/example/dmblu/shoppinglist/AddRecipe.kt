@@ -15,6 +15,7 @@ class AddRecipe : AppCompatActivity(), AdapterView.OnItemSelectedListener {
     //List of ingredients
     var list_of_ingredients = mutableListOf<Ingredient>()
     var ingredientCounter = 0
+    lateinit var dbHelper:RecipeDBHelper
     /*
         Function to add a new ingredient to our list of ingredients
      */
@@ -45,6 +46,7 @@ class AddRecipe : AppCompatActivity(), AdapterView.OnItemSelectedListener {
         ingredientType_0!!.setOnItemSelectedListener(this)
         val aa = ArrayAdapter(this, android.R.layout.simple_spinner_item, list_of_items)
         ingredientType_0!!.setAdapter(aa)
+        dbHelper = RecipeDBHelper(this)
     }
 
     /*
@@ -74,10 +76,10 @@ class AddRecipe : AppCompatActivity(), AdapterView.OnItemSelectedListener {
         Log.d("RecipeModel", recipe.text.toString())
         var ingrs:ArrayList<IngredientModel> = ArrayList<IngredientModel>()
         for (ingr in list_of_ingredients) {
-            ingrs.add(IngredientModel("1",ingr.ingredient, ingr.amount, ingr.type))
+            ingrs.add(IngredientModel("2",ingr.ingredient, ingr.amount, ingr.type))
         }
-        var newRecipe:RecipeModel = RecipeModel("1", name.text.toString(), ByteArray(1), ingrs.toString(), recipe.text.toString())
-        val dbHelper = RecipeDBHelper(this)
+        var newRecipe:RecipeModel = RecipeModel("2", name.text.toString(), ByteArray(1), ingrs.toString(), recipe.text.toString())
         dbHelper.insertRecipe(newRecipe)
+        toastSelected("Recipe Added")
     }
 }
