@@ -79,7 +79,7 @@ class AddRecipe : AppCompatActivity(), AdapterView.OnItemSelectedListener {
             ingrs.add(IngredientModel("-1",ingr.ingredient, ingr.amount, ingr.type))
         }
         var newRecipe:RecipeModel = RecipeModel("-1", name.text.toString(), ByteArray(1), ingrs.toString(), recipe.text.toString())
-        dbHelper.insertRecipe(newRecipe)
+        dbHelper.insertRecipe(newRecipe, ingrs)
         toastSelected("Recipe Added")
     }
 }

@@ -8,8 +8,6 @@ import android.database.sqlite.SQLiteDatabase
 import android.database.sqlite.SQLiteException
 import android.database.sqlite.SQLiteOpenHelper
 import android.util.Log
-import com.example.dmblu.shoppinglist.IngredientDBHelper.Companion.DATABASE_NAME
-import com.example.dmblu.shoppinglist.IngredientDBHelper.Companion.DATABASE_VERSION
 import com.example.dmblu.shoppinglist.R.id.recipe
 
 import java.util.ArrayList
@@ -31,27 +29,57 @@ class RecipeDBHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
     }
 
     @Throws(SQLiteConstraintException::class)
-    fun insertRecipe(recipe: RecipeModel): Boolean {
+    fun insertRecipe(recipe: RecipeModel, ingredients:ArrayList<IngredientModel>): Boolean {
         // Gets the data repository in write mode
         val db = writableDatabase
 
-        //Get the highest primary key, or first available to assign
-//        val allRecipes = readAllUsers()
-//        allRecipes.sortWith(Comparator { o1, o2 -> o1.recipeid - o2.recipeid})
-//        val newid = allRecipes.get(allRecipes.lastIndex).recipeid + 1
-        val newid = getMaxId() + 1
+        //Get the new id for the new recipe row
+        val newid = getMaxIdFromTable(DBContract.RecipeEntry.COLUMN_RECIPE_ID, DBContract.RecipeEntry.TABLE_NAME) + 1
+
+        //Get the id of each of the ingredients
+        var ingredientIDs:ArrayList<Int> = ArrayList<Int>()
+        for (ingredient in ingredients) {
+            var temp:Int = getIngredientID(ingredient)
+            if (temp >= 0) {
+                ingredientIDs.add(temp)
+            } else {
+                val newIngredientID = getMaxIdFromTable(DBContract.IngredientEntry.COLUMN_INGREDIENT_ID, DBContract.IngredientEntry.TABLE_NAME)
+                insertIngredient(ingredient, newIngredientID)
+                ingredientIDs.add(newIngredientID)
+            }
+        }
+
         // Create a new map of values, where column names are the keys
         val values = ContentValues().apply {
             put(DBContract.RecipeEntry.COLUMN_RECIPE_ID, newid)
             put(DBContract.RecipeEntry.COLUMN_NAME, recipe.name)
             put(DBContract.RecipeEntry.COLUMN_IMAGE, recipe.image)
-            put(DBContract.RecipeEntry.COLUMN_INGREDIENTS, recipe.list_ingredients)
+            put(DBContract.RecipeEntry.COLUMN_INGREDIENTS, ingredientIDs.toString())
             put(DBContract.RecipeEntry.COLUMN_RECIPE, recipe.recipe)
         }
 
         // Insert the new row, returning the primary key value of the new row
         val newRowId = db?.insert(DBContract.RecipeEntry.TABLE_NAME, null, values)
 
+        return true
+    }
+
+    /*
+        Adds a new ingredient into the ingredient table
+     */
+    @Throws(SQLiteConstraintException::class)
+    fun insertIngredient(ingredient:IngredientModel, id:Int):Boolean {
+
+        val db = writableDatabase
+
+        //Create a new map of values, where column names are the keys
+        val values = ContentValues().apply {
+            put(DBContract.IngredientEntry.COLUMN_INGREDIENT_ID, id)
+            put(DBContract.IngredientEntry.COLUMN_NAME, ingredient.name)
+            put(DBContract.IngredientEntry.COLUMN_AMOUNT, ingredient.amount.toString())
+            put(DBContract.IngredientEntry.COLUMN_TYPE, ingredient.type)
+        }
+        val newRowID = db?.insert(DBContract.IngredientEntry.TABLE_NAME, null, values)
         return true
     }
 
@@ -69,21 +97,50 @@ class RecipeDBHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
         return true
     }
 
-    fun getMaxId():Int {
+    /*
+        Method gets the max id in a given table (recipe or ingredient) to be able to add a new
+        row in the table
+     */
+    fun getMaxIdFromTable(column:String, table:String):Int {
         var cursor: Cursor? = null
         val db = writableDatabase
         try {
-            cursor = db.rawQuery("select max(" + DBContract.RecipeEntry.COLUMN_RECIPE_ID + ") from " + DBContract.RecipeEntry.TABLE_NAME, null)
+            cursor = db.rawQuery("select max($column) from $table", null)
         } catch (e: SQLiteException) {
             db.execSQL(SQL_CREATE_ENTRIES)
             return 0
         }
         val temp = 0
-        Log.d("temp is:", temp.toString())
-        Log.d("Number of rows", cursor.getCount().toString())
         cursor.moveToLast()
         return cursor.getString(temp).toInt()
     }
+
+    /*
+        Method will go through the ingrediennt table and check if this ingredient combination is
+        in there, and if it is then return the ID, else return -1
+     */
+    fun getIngredientID(ingredient:IngredientModel):Int {
+        var cursor: Cursor? = null
+        val db = writableDatabase
+        try {
+            cursor = db.rawQuery(getIngredientIDSQL(DBContract.IngredientEntry.TABLE_NAME, DBContract.IngredientEntry.COLUMN_INGREDIENT_ID, ingredient.ingredientid, DBContract.IngredientEntry.COLUMN_NAME, ingredient.name, DBContract.IngredientEntry.COLUMN_AMOUNT, ingredient.amount.toString(), DBContract.IngredientEntry.COLUMN_TYPE, ingredient.type), null)
+        } catch (e: SQLiteException) {
+            db.execSQL(INGREDIENT_CREATE_ENTRIES)
+            return -1
+        }
+        if (cursor.count > 0) {
+            return cursor.getString(0).toInt()
+        }
+        return -1
+    }
+
+    /*
+        Helper method to create the sql command in an easier to read format
+     */
+    fun getIngredientIDSQL(table:String, idColumn:String, ingredientid:String, nameColumn:String, name:String, amountColumn:String, amount:String, typeColumn:String, type:String):String {
+        return ("select * from $table where $idColumn = $ingredientid, $nameColumn = $name, $amountColumn = $amount, $typeColumn = $type")
+    }
+
     fun readUser(userid: String): ArrayList<RecipeModel> {
         val users = ArrayList<RecipeModel>()
         val db = writableDatabase
@@ -142,6 +199,7 @@ class RecipeDBHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
         val DATABASE_VERSION = 5
         val DATABASE_NAME = "RecipeApp.db"
 
+        //SQL commands for the recipe table
         private val SQL_CREATE_ENTRIES =
                 "CREATE TABLE " + DBContract.RecipeEntry.TABLE_NAME + " (" +
                         DBContract.RecipeEntry.COLUMN_RECIPE_ID + " TEXT PRIMARY KEY," +
@@ -151,6 +209,16 @@ class RecipeDBHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
                         DBContract.RecipeEntry.COLUMN_RECIPE + " TEXT)"
 
         private val SQL_DELETE_ENTRIES = "DROP TABLE IF EXISTS " + DBContract.RecipeEntry.TABLE_NAME
+
+        //SQL commands for the ingredients table
+        private val INGREDIENT_CREATE_ENTRIES =
+                "CREATE TABLE " + DBContract.IngredientEntry.TABLE_NAME + " (" +
+                        DBContract.IngredientEntry.COLUMN_INGREDIENT_ID + " TEXT PRIMARY KEY," +
+                        DBContract.IngredientEntry.COLUMN_NAME + " TEXT," +
+                        DBContract.IngredientEntry.COLUMN_AMOUNT + " TEXT," +
+                        DBContract.IngredientEntry.COLUMN_TYPE + " TEXT)"
+
+        private val INGREDIENT_DELETE_ENTRIES = "DROP TABLE IF EXISTS " + DBContract.IngredientEntry.TABLE_NAME
     }
 
 }
