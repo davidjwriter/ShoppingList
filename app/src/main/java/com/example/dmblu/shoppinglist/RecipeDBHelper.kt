@@ -43,7 +43,7 @@ class RecipeDBHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
             if (temp >= 0) {
                 ingredientIDs.add(temp)
             } else {
-                val newIngredientID = getMaxIdFromTable(DBContract.IngredientEntry.COLUMN_INGREDIENT_ID, DBContract.IngredientEntry.TABLE_NAME)
+                val newIngredientID = getMaxIdFromTable(DBContract.IngredientEntry.COLUMN_INGREDIENT_ID, DBContract.IngredientEntry.TABLE_NAME) + 1
                 insertIngredient(ingredient, newIngredientID)
                 ingredientIDs.add(newIngredientID)
             }
@@ -112,7 +112,11 @@ class RecipeDBHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
         }
         val temp = 0
         cursor.moveToLast()
-        return cursor.getString(temp).toInt()
+        if (cursor.count > 0 && cursor.getString(temp) != null) {
+            return cursor.getString(temp).toInt()
+        } else {
+            return -1
+        }
     }
 
     /*
@@ -123,12 +127,22 @@ class RecipeDBHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
         var cursor: Cursor? = null
         val db = writableDatabase
         try {
-            cursor = db.rawQuery(getIngredientIDSQL(DBContract.IngredientEntry.TABLE_NAME, DBContract.IngredientEntry.COLUMN_INGREDIENT_ID, ingredient.ingredientid, DBContract.IngredientEntry.COLUMN_NAME, ingredient.name, DBContract.IngredientEntry.COLUMN_AMOUNT, ingredient.amount.toString(), DBContract.IngredientEntry.COLUMN_TYPE, ingredient.type), null)
+            cursor = db.rawQuery(getIngredientIDSQL(
+                    DBContract.IngredientEntry.TABLE_NAME,
+                    DBContract.IngredientEntry.COLUMN_NAME,
+                    ingredient.name,
+                    DBContract.IngredientEntry.COLUMN_AMOUNT,
+                    ingredient.amount.toString(),
+                    DBContract.IngredientEntry.COLUMN_TYPE,
+                    ingredient.type
+            ), null)
         } catch (e: SQLiteException) {
-            db.execSQL(INGREDIENT_CREATE_ENTRIES)
+            Log.d("Ingredient Exception", e.message)
+            //db.execSQL(INGREDIENT_CREATE_ENTRIES)
             return -1
         }
-        if (cursor.count > 0) {
+        cursor.moveToLast()
+        if (cursor.count > 0 && cursor.getString(0) != null) {
             return cursor.getString(0).toInt()
         }
         return -1
@@ -137,8 +151,16 @@ class RecipeDBHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
     /*
         Helper method to create the sql command in an easier to read format
      */
-    fun getIngredientIDSQL(table:String, idColumn:String, ingredientid:String, nameColumn:String, name:String, amountColumn:String, amount:String, typeColumn:String, type:String):String {
-        return ("select * from $table where $idColumn = $ingredientid, $nameColumn = $name, $amountColumn = $amount, $typeColumn = $type")
+    fun getIngredientIDSQL(
+            table:String,
+            nameColumn:String,
+            name:String,
+            amountColumn:String,
+            amount:String,
+            typeColumn:String,
+            type:String
+    ):String {
+        return ("select * from $table where $nameColumn = '$name' AND $amountColumn = '$amount' AND $typeColumn = '$type'")
     }
 
     fun readUser(userid: String): ArrayList<RecipeModel> {
